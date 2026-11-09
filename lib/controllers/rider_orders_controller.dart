@@ -70,16 +70,19 @@ class RiderOrdersController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<bool> startDelivery({
+  Future<bool> updateOrderStatus({
     required String outletId,
     required String orderId,
+    required String status,
+    String? generatedOtp,
   }) async {
     state = const AsyncValue.loading();
     try {
       await _repo.updateDeliveryStatus(
         outletId: outletId,
         orderId: orderId,
-        status: 'OUT_FOR_DELIVERY',
+        status: status,
+        generatedOtp: generatedOtp,
       );
       state = const AsyncValue.data(null);
       return true;
@@ -87,6 +90,39 @@ class RiderOrdersController extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
       return false;
     }
+  }
+
+  Future<bool> completeDeliveryAndCollectPayment({
+    required String outletId,
+    required String orderId,
+    required Map<String, double> paymentBreakdown,
+    required String primaryPaymentMethod,
+  }) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repo.completeDeliveryWithPayment(
+        outletId: outletId,
+        orderId: orderId,
+        paymentBreakdown: paymentBreakdown,
+        primaryPaymentMethod: primaryPaymentMethod,
+      );
+      state = const AsyncValue.data(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      return false;
+    }
+  }
+
+  Future<bool> startDelivery({
+    required String outletId,
+    required String orderId,
+  }) async {
+    return updateOrderStatus(
+      outletId: outletId,
+      orderId: orderId,
+      status: 'OUT_FOR_DELIVERY',
+    );
   }
 }
 

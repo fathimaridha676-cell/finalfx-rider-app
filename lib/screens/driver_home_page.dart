@@ -17,8 +17,54 @@ class DriverHomePage extends ConsumerStatefulWidget {
   ConsumerState<DriverHomePage> createState() => _DriverHomePageState();
 }
 
-class _DriverHomePageState extends ConsumerState<DriverHomePage> {
+class _DriverHomePageState extends ConsumerState<DriverHomePage> with WidgetsBindingObserver {
   int _currentNavIndex = 0;
+  DriverProfileModel? _lastDriver;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    // When the app opens, automatically mark driver as ONLINE
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setOnlineStatus(true);
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // When disposed / closed, mark driver as OFFLINE
+    _setOnlineStatus(false);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Driver brought app back to foreground -> set ONLINE
+      _setOnlineStatus(true);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      // Driver minimized, switched away, or closed app -> set OFFLINE
+      _setOnlineStatus(false);
+    }
+  }
+
+  void _setOnlineStatus(bool isOnline) {
+    ref.read(driverDutyStatusProvider.notifier).state = isOnline;
+    final driver = _lastDriver ?? ref.read(currentDriverProfileProvider).value;
+    if (driver != null && (driver.id != null || driver.email.isNotEmpty)) {
+      ref.read(riderOrdersControllerProvider.notifier).toggleDutyStatus(
+            outletId: driver.outletId,
+            driverId: driver.id ?? driver.email,
+            isOnline: isOnline,
+            email: driver.email,
+          );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +86,9 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> {
             body: Center(child: Text('No active driver session found.')),
           );
         }
+
+        // Cache driver profile for lifecycle events
+        _lastDriver = driver;
 
         // Subpages for bottom navigation
         final pages = [
@@ -121,7 +170,7 @@ class _DriverHomeDashboard extends ConsumerWidget {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
       body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         slivers: [
           // 1. Ultra-Modern Executive FX Hero Header
           SliverToBoxAdapter(
@@ -235,28 +284,16 @@ class _DriverHomeDashboard extends ConsumerWidget {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Row(
-                                            children: [
-                                              Flexible(
-                                                child: Text(
-                                                  driver.name,
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: GoogleFonts.plusJakartaSans(
-                                                    fontSize: 17.5,
-                                                    fontWeight: FontWeight.w800,
-                                                    letterSpacing: -0.2,
-                                                    color: Colors.white,
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 5),
-                                              const Icon(
-                                                Icons.verified_rounded,
-                                                color: Color(0xFF38BDF8),
-                                                size: 16,
-                                              ),
-                                            ],
+                                          Text(
+                                            driver.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 17.5,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: -0.2,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                           const SizedBox(height: 3),
                                           Row(
@@ -386,6 +423,7 @@ class _DriverHomeDashboard extends ConsumerWidget {
                 ),
                 data: (orders) {
                   final total = orders.length;
+                  final digitalMenuCount = orders.where((o) => o.source.toUpperCase() == 'DIGITAL_MENU' || o.source.isEmpty).length;
                   final pending = orders.where((o) => o.orderStatus.toUpperCase() != 'DELIVERED' && o.orderStatus.toUpperCase() != 'CANCELLED').length;
                   final delivered = orders.where((o) => o.orderStatus.toUpperCase() == 'DELIVERED').length;
                   final cancelled = orders.where((o) => o.orderStatus.toUpperCase() == 'CANCELLED').length;
@@ -433,7 +471,7 @@ class _DriverHomeDashboard extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  l10n.tr('current_mission'),
+                                  l10n.tr('active_order'),
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w800,
@@ -469,32 +507,39 @@ class _DriverHomeDashboard extends ConsumerWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(8),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(
+                                    Icons.bar_chart_rounded,
+                                    size: 16,
+                                    color: Color(0xFF0284C7),
+                                  ),
                                 ),
-                                child: const Icon(
-                                  Icons.bar_chart_rounded,
-                                  size: 16,
-                                  color: Color(0xFF0284C7),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    l10n.tr('performance_overview'),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.2,
+                                      color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                l10n.tr('performance_overview'),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 15.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: -0.2,
-                                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
@@ -524,9 +569,20 @@ class _DriverHomeDashboard extends ConsumerWidget {
                       ),
                       const SizedBox(height: 14),
 
-                      // 4-Card Refined Metric Grid
+                      // Metric Grid: Digital Menu & Total Assigned on top row
                       Row(
                         children: [
+                          Expanded(
+                            child: _buildMetricCard(
+                              title: l10n.tr('digital_menu'),
+                              count: digitalMenuCount.toString(),
+                              icon: Icons.qr_code_rounded,
+                              accentColor: const Color(0xFF0D9488),
+                              iconBg: const Color(0xFFCCFBF1),
+                              isDark: isDark,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: _buildMetricCard(
                               title: l10n.tr('total_assigned'),
@@ -537,7 +593,11 @@ class _DriverHomeDashboard extends ConsumerWidget {
                               isDark: isDark,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
                           Expanded(
                             child: _buildMetricCard(
                               title: l10n.tr('pending'),
@@ -548,11 +608,7 @@ class _DriverHomeDashboard extends ConsumerWidget {
                               isDark: isDark,
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
+                          const SizedBox(width: 12),
                           Expanded(
                             child: _buildMetricCard(
                               title: l10n.tr('delivered'),
@@ -563,7 +619,11 @@ class _DriverHomeDashboard extends ConsumerWidget {
                               isDark: isDark,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
                           Expanded(
                             child: _buildMetricCard(
                               title: l10n.tr('cancelled'),
@@ -574,6 +634,8 @@ class _DriverHomeDashboard extends ConsumerWidget {
                               isDark: isDark,
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          const Expanded(child: SizedBox()), // Balances 5th card cleanly
                         ],
                       ),
 

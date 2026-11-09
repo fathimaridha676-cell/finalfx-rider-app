@@ -36,14 +36,36 @@ class AppLocalizations {
       'cancelled': 'Cancelled',
       'digital_menu': 'Digital Menu',
 
-      // Mission
-      'current_mission': 'Current Mission',
+      // Mission & Active Order
+      'current_mission': 'Active Order',
+      'active_order': 'Active Order',
       'out_for_delivery': 'Out For Delivery',
       'all_caught_up': 'All Caught Up!',
       'no_pending_deliveries': 'You have no pending deliveries right now.',
       'orders_queue': 'Delivery Orders Queue',
       'orders_queue_desc': 'View all orders, customer locations & receipts',
       'open': 'Open',
+
+      // Stages
+      'stage_all': 'All',
+      'stage_assigned': 'Assigned',
+      'stage_shop_picked': 'Shop Picked',
+      'stage_on_the_way': 'On the Way',
+
+      // Order Card Details
+      'order_type': 'Order Type',
+      'home_delivery': 'HomeDelivery',
+      'customer_name': 'Customer Name',
+      'phone_number': 'Phone Number',
+      'delivery_address': 'Delivery Address',
+      'track_map': 'TRACK MAP',
+      'pick_from_shop': 'PICK FROM SHOP',
+      'start_ride': 'START RIDE',
+      'arrived': 'ARRIVED',
+      'call': 'Call',
+      'open_google_maps': 'Open in Google Maps',
+      'destination': 'Destination',
+      'rider_location': 'Your Location',
 
       // Orders tab
       'my_deliveries': 'My Deliveries',
@@ -60,8 +82,40 @@ class AppLocalizations {
       'items_count': 'Items',
       'item_single': 'Item',
 
-      // Actions
-      'mark_delivered': 'Mark as Delivered',
+      // Collect Payment & OTP
+      'collect_payment': 'Collect Payment',
+      'order_hash': 'Order #',
+      'customer_delivery_otp': 'Customer Delivery OTP',
+      'otp_instruction': 'Enter 4-digit PIN given by customer upon delivery handover.',
+      'verify': 'Verify',
+      'otp_verified': 'OTP Verified',
+      'invalid_otp': 'Invalid PIN. Please ask customer for correct 4-digit PIN.',
+      'customer_info': 'Customer Info',
+      'items_ordered': 'Items Ordered',
+      'subtotal': 'Subtotal',
+      'tax_vat': 'Tax (VAT)',
+      'delivery_charge': 'Delivery Charge',
+      'total_due': 'Total Due',
+      'split_payment': 'Split Payment',
+      'split_instruction': 'Enter amount per method — total must equal',
+      'cash': 'Cash',
+      'card_bank': 'Card / Bank',
+      'upi_qr': 'UPI / QR',
+      'allocated': 'Allocated',
+      'amount_to_collect': 'Amount to collect',
+      'otp_required_warning': 'Customer OTP PIN verification required',
+      'amount_mismatch_warning': 'Allocated amount must equal total due',
+      'confirm_delivery_collect': 'Confirm Delivery & Collect',
+      'delivery_completed_success': 'Delivery completed and payment confirmed!',
+
+      // Confirmation Dialogs
+      'confirm_pick_shop_title': 'Pick from Shop?',
+      'confirm_pick_shop_msg': 'Confirm that you have collected the order from the outlet.',
+      'confirm_start_ride_title': 'Start Ride?',
+      'confirm_start_ride_msg': 'Confirm that you are departing for delivery.',
+      'confirm_arrived_title': 'Arrived at Destination?',
+      'confirm_arrived_msg': 'Confirm that you have arrived at the customer address.',
+      'confirm': 'Confirm',
       'cancel': 'Cancel',
       'confirm_delivered': 'Confirm Delivered',
       'confirm_delivered_title': 'Mark as Delivered?',
@@ -130,14 +184,36 @@ class AppLocalizations {
       'cancelled': 'ملغي',
       'digital_menu': 'قائمة رقمية',
 
-      // Mission
-      'current_mission': 'المهمة الحالية',
+      // Mission & Active Order
+      'current_mission': 'الطلب النشط',
+      'active_order': 'الطلب النشط',
       'out_for_delivery': 'خرج للتوصيل',
       'all_caught_up': 'لا توجد مهام حالية!',
       'no_pending_deliveries': 'ليس لديك أي طلبات معلقة الآن.',
       'orders_queue': 'قائمة طلبات التوصيل',
       'orders_queue_desc': 'عرض كافة الطلبات وعناوين العملاء والفواتير',
       'open': 'فتح',
+
+      // Stages
+      'stage_all': 'الكل',
+      'stage_assigned': 'تم التعيين',
+      'stage_shop_picked': 'تم الاستلام',
+      'stage_on_the_way': 'في الطريق',
+
+      // Order Card Details
+      'order_type': 'نوع الطلب',
+      'home_delivery': 'توصيل للمنزل',
+      'customer_name': 'اسم العميل',
+      'phone_number': 'رقم الهاتف',
+      'delivery_address': 'عنوان التوصيل',
+      'track_map': 'تتبع الخريطة',
+      'pick_from_shop': 'استلام من المتجر',
+      'start_ride': 'بدء الرحلة',
+      'arrived': 'وصلت للوجهة',
+      'call': 'اتصال',
+      'open_google_maps': 'فتح في خرائط جوجل',
+      'destination': 'وجهة التوصيل',
+      'rider_location': 'موقعك الحالي',
 
       // Orders tab
       'my_deliveries': 'توصيلاتي',
@@ -154,8 +230,40 @@ class AppLocalizations {
       'items_count': 'أصناف',
       'item_single': 'صنف',
 
-      // Actions
-      'mark_delivered': 'تحديد كمكتمل',
+      // Collect Payment & OTP
+      'collect_payment': 'تحصيل المبلغ والتوصيل',
+      'order_hash': 'طلب رقم #',
+      'customer_delivery_otp': 'رمز التحقق من العميل (OTP)',
+      'otp_instruction': 'أدخل الرمز المكون من 4 أرقام المستلم من العميل عند التسليم.',
+      'verify': 'تحقق',
+      'otp_verified': 'تم التحقق من الرمز',
+      'invalid_otp': 'الرمز غير صحيح، يرجى طلب الرمز الصحيح من العميل.',
+      'customer_info': 'بيانات العميل',
+      'items_ordered': 'الأصناف المطلوبة',
+      'subtotal': 'المجموع الفرعي',
+      'tax_vat': 'ضريبة القيمة المضافة',
+      'delivery_charge': 'رسوم التوصيل',
+      'total_due': 'المبلغ الإجمالي',
+      'split_payment': 'تقسيم الدفع',
+      'split_instruction': 'أدخل المبلغ لكل وسيلة — يجب أن يطابق الإجمالي',
+      'cash': 'نقداً (كاش)',
+      'card_bank': 'بطاقة / شبكة',
+      'upi_qr': 'دفع إلكتروني / QR',
+      'allocated': 'المبلغ الموزع',
+      'amount_to_collect': 'المبلغ المطلوب تحصيله',
+      'otp_required_warning': 'مطلوب إدخال رمز التحقق (OTP) أولاً',
+      'amount_mismatch_warning': 'المبلغ الموزع يجب أن يساوي الإجمالي',
+      'confirm_delivery_collect': 'تأكيد التسليم والتحصيل',
+      'delivery_completed_success': 'تم إكمال التوصيل وتأكيد استلام المبلغ بنجاح!',
+
+      // Confirmation Dialogs
+      'confirm_pick_shop_title': 'استلام من المتجر؟',
+      'confirm_pick_shop_msg': 'تأكيد استلامك للطلب من الفرع بنجاح.',
+      'confirm_start_ride_title': 'بدء الرحلة؟',
+      'confirm_start_ride_msg': 'تأكيد الانطلاق لبدء توصيل الطلب للعميل.',
+      'confirm_arrived_title': 'وصلت للوجهة؟',
+      'confirm_arrived_msg': 'تأكيد وصولك إلى عنوان العميل بنجاح.',
+      'confirm': 'تأكيد',
       'cancel': 'إلغاء',
       'confirm_delivered': 'تأكيد التسليم',
       'confirm_delivered_title': 'تأكيد التوصيل؟',

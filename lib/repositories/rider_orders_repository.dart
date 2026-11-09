@@ -72,45 +72,90 @@ class RiderOrdersRepository {
         });
   }
 
-  /// Updates driver online/offline duty status in Firestore
+  /// Updates driver online/offline duty status in Firestore across all relevant locations
   Future<void> updateDriverDutyStatus({
     required String outletId,
     required String driverId,
     required bool isOnline,
     String? email,
   }) async {
-    final statusMap = {
+    final statusMap = <String, dynamic>{
       'isOnline': isOnline,
       'dutyStatus': isOnline ? 'online' : 'offline',
       'lastDutyChangedAt': FieldValue.serverTimestamp(),
     };
 
-    try {
-      await _firestore
-          .collection('inventory')
-          .doc(outletId)
-          .collection('drivers')
-          .doc(driverId)
-          .update(statusMap);
-    } catch (_) {}
+    // 1. Only update if the document already exists in /inventory/{outletId}/drivers/{driverId}
+    if (outletId.isNotEmpty && driverId.isNotEmpty) {
+      try {
+        final docRef = _firestore
+            .collection('inventory')
+            .doc(outletId)
+            .collection('drivers')
+            .doc(driverId);
+        
+        final docSnap = await docRef.get();
+        if (docSnap.exists) {
+          await docRef.update(statusMap);
+        }
+      } catch (e) {
+        debugPrint('[RiderOrdersRepository] Error updating /inventory/$outletId/drivers/$driverId: $e');
+      }
+    }
 
+    // 2. Also search by email in /inventory/{outletId}/drivers to update existing doc without creating a new one
+    if (outletId.isNotEmpty && email != null && email.isNotEmpty) {
+      try {
+        final querySnap = await _firestore
+            .collection('inventory')
+            .doc(outletId)
+            .collection('drivers')
+            .where('email', isEqualTo: email.trim().toLowerCase())
+            .get();
+
+        for (final doc in querySnap.docs) {
+          await doc.reference.update(statusMap);
+        }
+      } catch (e) {
+        debugPrint('[RiderOrdersRepository] Error updating by email query: $e');
+      }
+    }
+
+    // 3. Update top-level drivers registry: /drivers/{email} (only if it exists)
     if (email != null && email.isNotEmpty) {
       try {
-        await _firestore.collection('drivers').doc(email.trim().toLowerCase()).update(statusMap);
-      } catch (_) {}
+        final regRef = _firestore.collection('drivers').doc(email.trim().toLowerCase());
+        final regSnap = await regRef.get();
+        if (regSnap.exists) {
+          await regRef.update(statusMap);
+        }
+      } catch (e) {
+        debugPrint('[RiderOrdersRepository] Error updating /drivers/$email: $e');
+      }
     }
   }
 
-  /// Updates order delivery status (e.g. DELIVERED, OUT_FOR_DELIVERY)
-  Future<void> updateDeliveryStatus({
+  /// Updates order delivery status (e.g. SHOP_PICKED, OUT_FOR_DELIVERY, ARRIVED, DELIVERED)
+  /// If status is ARRIVED and no OTP exists in doc, generates a random 4-digit PIN for customer verification.
+  Future<String?> updateDeliveryStatus({
     required String outletId,
     required String orderId,
     required String status,
     String? cancellationReason,
+    String? generatedOtp,
   }) async {
     final updateData = <String, dynamic>{
       'orderStatus': status,
       'status': status == 'CANCELLED' ? -1 : 1,
+      if (status == 'SHOP_PICKED' || status == 'PICKED_FROM_SHOP')
+        'pickedAt': FieldValue.serverTimestamp(),
+      if (status == 'OUT_FOR_DELIVERY' || status == 'DISPATCHED')
+        'dispatchedAt': FieldValue.serverTimestamp(),
+      if (status == 'ARRIVED') ...{
+        'arrivedAt': FieldValue.serverTimestamp(),
+        // If an OTP was passed (or generated), persist it to Firestore so the customer app can display it
+        if (generatedOtp != null && generatedOtp.isNotEmpty) 'deliveryOtp': generatedOtp,
+      },
       if (status == 'DELIVERED') 'deliveredAt': FieldValue.serverTimestamp(),
       if (status == 'CANCELLED') ...{
         'cancelledAt': FieldValue.serverTimestamp(),
@@ -125,7 +170,33 @@ class RiderOrdersRepository {
         .doc(outletId)
         .collection('digitalMenuOrders')
         .doc(orderId)
-        .update(updateData);
+        .set(updateData, SetOptions(merge: true));
+
+    return generatedOtp;
+  }
+
+  /// Completes delivery and marks payment as collected
+  Future<void> completeDeliveryWithPayment({
+    required String outletId,
+    required String orderId,
+    required Map<String, double> paymentBreakdown,
+    required String primaryPaymentMethod,
+  }) async {
+    final updateData = <String, dynamic>{
+      'orderStatus': 'DELIVERED',
+      'paymentStatus': 'PAID',
+      'paymentMethod': primaryPaymentMethod,
+      'collectedPaymentBreakdown': paymentBreakdown,
+      'deliveredAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    await _firestore
+        .collection('orders')
+        .doc(outletId)
+        .collection('digitalMenuOrders')
+        .doc(orderId)
+        .set(updateData, SetOptions(merge: true));
   }
 }
 
