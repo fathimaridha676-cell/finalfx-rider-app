@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "838039920940",
+    "project_id": "final-fx-product",
+    "storage_bucket": "final-fx-product.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838039920940:android:39acec80dfaa1864c74c89",
+        "android_client_info": {
+          "package_name": "com.example.final_fx_product"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "838039920940-ut4nssdb5f23i2vp72vmqehbmnqost2t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.final_fx_product",
+            "certificate_hash": "3fb7ca8cbdf47ba2b1119734a4a2491b3037c610"
+          }
+        },
+        {
+          "client_id": "838039920940-fv3b79udqatajb6prjc8lvr94h6ie67b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7BsDidaFJIlPaxxoIIl9W_3mVaMc_454"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "838039920940-fv3b79udqatajb6prjc8lvr94h6ie67b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "838039920940-214gvkqtrqd5t8bb7fv3u9jjrkthqckp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.finalFxProduct"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838039920940:android:677b75f0d090f8a2c74c89",
+        "android_client_info": {
+          "package_name": "com.finalfx.merchant.rider"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "838039920940-fv3b79udqatajb6prjc8lvr94h6ie67b.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7BsDidaFJIlPaxxoIIl9W_3mVaMc_454"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "838039920940-fv3b79udqatajb6prjc8lvr94h6ie67b.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "838039920940-214gvkqtrqd5t8bb7fv3u9jjrkthqckp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.finalFxProduct"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
