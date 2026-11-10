@@ -4,8 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   AppTheme._();
 
-  // Colors Light
-  static const Color primaryLight = Color(0xFF0284C7);
+  // Colors Light - Minimalist Slate & Emerald
+  static const Color primaryLight = Color(0xFF0F172A); // Deep Slate
+  static const Color accentLight = Color(0xFF10B981);  // Emerald Green
   static const Color backgroundLight = Color(0xFFF8FAFC);
   static const Color surfaceLight = Colors.white;
   static const Color textPrimaryLight = Color(0xFF0F172A);
@@ -13,7 +14,8 @@ class AppTheme {
   static const Color borderLight = Color(0xFFE2E8F0);
 
   // Colors Dark
-  static const Color primaryDark = Color(0xFF38BDF8);
+  static const Color primaryDark = Color(0xFFF8FAFC);
+  static const Color accentDark = Color(0xFF10B981);
   static const Color backgroundDark = Color(0xFF0B0F19);
   static const Color surfaceDark = Color(0xFF1E293B);
   static const Color textPrimaryDark = Color(0xFFF8FAFC);

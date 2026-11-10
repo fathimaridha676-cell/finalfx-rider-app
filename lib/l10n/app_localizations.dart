@@ -62,6 +62,7 @@ class AppLocalizations {
       'pick_from_shop': 'PICK FROM SHOP',
       'start_ride': 'START RIDE',
       'arrived': 'ARRIVED',
+      'mark_delivered': 'MARK AS DELIVERED',
       'call': 'Call',
       'open_google_maps': 'Open in Google Maps',
       'destination': 'Destination',
@@ -162,6 +163,23 @@ class AppLocalizations {
       'active_rider': 'Active Delivery Driver',
       'inactive_rider': 'Inactive',
       'version': 'FX Merchant Rider • Version 1.0.0',
+
+      // Modern Dashboard Keys
+      'cash_in_hand': 'Cash in Hand',
+      'daily_settlement': 'Daily Settlement',
+      'collected_on_cod': 'Collected on COD orders',
+      'ongoing_order': 'Ongoing Order',
+      'delivery_completion': 'Delivery Completion',
+      'drops': 'Drops',
+      'active_label': 'Active',
+      'order_history_reports': 'Detailed Order History & Reports',
+      'pick_store': 'Pick Store',
+      'handover': 'Handover',
+      'done_suffix': 'Done',
+      'active_drops_pipeline': 'active drops ready in pipeline',
+      'deliveries_btn': 'Deliveries',
+      'live_dispatch': 'Live Dispatch',
+      'driver_portal_account': 'Driver Portal Account',
     },
     'ar': {
       // Nav
@@ -214,6 +232,7 @@ class AppLocalizations {
       'pick_from_shop': 'استلام من المتجر',
       'start_ride': 'بدء الرحلة',
       'arrived': 'وصلت للوجهة',
+      'mark_delivered': 'تأكيد التسليم',
       'call': 'اتصال',
       'open_google_maps': 'فتح في خرائط جوجل',
       'destination': 'وجهة التوصيل',
@@ -314,6 +333,23 @@ class AppLocalizations {
       'active_rider': 'سائق نشط',
       'inactive_rider': 'غير نشط',
       'version': 'FX Merchant Rider • الإصدار 1.0.0',
+
+      // Modern Dashboard Keys
+      'cash_in_hand': 'النقد المستلم',
+      'daily_settlement': 'التسوية اليومية',
+      'collected_on_cod': 'المحصل من طلبات الدفع عند الاستلام',
+      'ongoing_order': 'الطلب الحالي',
+      'delivery_completion': 'نسبة إنجاز التوصيل',
+      'drops': 'توصيلات',
+      'active_label': 'نشط',
+      'order_history_reports': 'سجل الطلبات والتقارير المفصلة',
+      'pick_store': 'استلام من المتجر',
+      'handover': 'تسليم العميل',
+      'done_suffix': 'مكتمل',
+      'active_drops_pipeline': 'طلبات نشطة جاهزة في المسار',
+      'deliveries_btn': 'التوصيلات',
+      'live_dispatch': 'إرسال مباشر',
+      'driver_portal_account': 'حساب بوابة السائق',
     },
   };
 

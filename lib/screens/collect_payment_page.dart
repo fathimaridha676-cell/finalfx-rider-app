@@ -110,16 +110,6 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
         _otpError = null;
       });
       FocusScope.of(context).unfocus();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '✓ ${l10n.tr('otp_verified')}',
-            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
-          ),
-          backgroundColor: const Color(0xFF0284C7),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
     } else {
       setState(() {
         _otpError = l10n.tr('invalid_otp');
@@ -130,7 +120,12 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
   bool get _isAlreadyPaid {
     final payStatus = widget.order.paymentStatus.toUpperCase();
     final payMethod = widget.order.paymentMethod.toUpperCase();
+    // PAY_LATER or CASH upon delivery means payment is NOT yet paid
+    if (payMethod.contains('LATER') || payMethod.contains('COD') || payMethod.contains('CASH') || payMethod == 'PAY_ON_DELIVERY') {
+      return payStatus == 'PAID' || payStatus == 'COMPLETED';
+    }
     return payStatus == 'PAID' ||
+        payStatus == 'COMPLETED' ||
         payMethod == 'PREPAID' ||
         payMethod == 'ONLINE' ||
         payMethod == 'CARD_ONLINE' ||
@@ -943,18 +938,21 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
           ),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Amount Collected from Customer:',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+              Expanded(
+                child: Text(
+                  'Amount Collected from Customer:',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
-                'SAR 0.00 (No cash to collect)',
+                'SAR 0.00',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w900,

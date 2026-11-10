@@ -30,110 +30,267 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        title: Text(
-          l10n.tr('my_profile'),
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : const Color(0xFF1E293B),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.badge_rounded,
+                          color: Color(0xFF10B981), // Emerald accent
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            l10n.tr('my_profile'),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            l10n.tr('driver_portal_account'),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Driver Profile Summary Card
+            // 1. Premium Driver Profile Hero Card
             Container(
-              padding: const EdgeInsets.all(18),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  width: 1.2,
                 ),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x040F172A),
-                    blurRadius: 10,
-                    offset: Offset(0, 3),
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF0284C7), Color(0xFF2563EB)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  Row(
+                    children: [
+                      // Avatar with Emerald Ring
+                      Stack(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isDark
+                                    ? [const Color(0xFF0F172A), const Color(0xFF1E293B)]
+                                    : [const Color(0xFF0F172A), const Color(0xFF334155)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xFF10B981),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.25),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              driver.name.isNotEmpty ? driver.name[0].toUpperCase() : 'R',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                  width: 2.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0284C7).withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    driver.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.3,
+                                      color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              driver.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12.5,
+                                color: const Color(0xFF64748B),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (driver.mobileNumber.isNotEmpty) ...[
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  const Icon(Icons.phone_rounded, size: 12.5, color: Color(0xFF10B981)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    driver.mobileNumber,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
                         ),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      driver.name.isNotEmpty ? driver.name[0].toUpperCase() : 'R',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 16),
+                  // Rider Status & Outlet Info Chips
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          driver.name,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
-                          ),
+                        Row(
+                          children: [
+                            const Icon(Icons.storefront_rounded, size: 15, color: Color(0xFF64748B)),
+                            const SizedBox(width: 7),
+                            Text(
+                              driver.outletName.isNotEmpty ? driver.outletName : l10n.tr('outlet_name'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          driver.email,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            color: const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD1FAE5),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        ),
-                        if (driver.mobileNumber.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Row(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.phone_outlined, size: 13, color: Color(0xFF10B981)),
-                              const SizedBox(width: 4),
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF10B981),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 5),
                               Text(
-                                driver.mobileNumber,
+                                l10n.tr('active_label'),
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF047857),
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -143,19 +300,20 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
 
             const SizedBox(height: 24),
 
-            // 2. Settings & More Card (Matches requested reference)
+            // 2. Settings Group Card (Slate & Emerald Theme)
             Container(
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
                   color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  width: 1.2,
                 ),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x040F172A),
-                    blurRadius: 10,
-                    offset: Offset(0, 3),
+                    color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -164,27 +322,28 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                 children: [
                   // Section Header
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(7),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
+                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
-                            Icons.settings_outlined,
-                            size: 17,
-                            color: Color(0xFFD97706),
+                            Icons.tune_rounded,
+                            size: 16,
+                            color: Color(0xFF10B981),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Text(
                           l10n.tr('settings'),
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 15,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
                             color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
                           ),
                         ),
@@ -193,14 +352,14 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                   ),
 
                   Divider(
-                    height: 16,
+                    height: 12,
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                   ),
 
                   // 1. Order History
                   _buildSettingItem(
                     icon: Icons.history_rounded,
-                    iconBg: isDark ? const Color(0xFF0F172A) : const Color(0xFFE0F2FE),
+                    iconBg: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                     iconColor: const Color(0xFF0284C7),
                     title: l10n.tr('order_history'),
                     subtitle: l10n.tr('order_history_desc'),
@@ -223,9 +382,9 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
 
                   // 2. Branch Details
                   _buildSettingItem(
-                    icon: Icons.storefront_outlined,
+                    icon: Icons.storefront_rounded,
                     iconBg: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                    iconColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
+                    iconColor: const Color(0xFF10B981),
                     title: l10n.tr('branch_details'),
                     subtitle: driver.outletName.isNotEmpty ? driver.outletName : l10n.tr('outlet_name'),
                     titleColor: isDark ? const Color(0xFFF8FAFC) : null,
@@ -245,36 +404,50 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                   ),
 
-                  // 2. Language (اللغة) with switch toggle
+                  // 3. Language (اللغة) with segmented pill toggle
                   _buildSettingItem(
-                    icon: Icons.language_rounded,
+                    icon: Icons.translate_rounded,
                     iconBg: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                    iconColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
+                    iconColor: const Color(0xFF8B5CF6),
                     title: l10n.tr('language'),
                     subtitle: selectedLanguageLabel,
                     titleColor: isDark ? const Color(0xFFF8FAFC) : null,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          currentLocale.languageCode == 'ar' ? 'العربية' : 'EN',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF0284C7),
+                    trailing: InkWell(
+                      onTap: () {
+                        final newLang = currentLocale.languageCode == 'ar' ? 'en' : 'ar';
+                        ref.read(appLocaleProvider.notifier).setLocale(newLang);
+                        _showLanguageChangedSnackbar(newLang == 'ar' ? 'العربية' : 'English');
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.25),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Switch.adaptive(
-                          value: currentLocale.languageCode == 'ar',
-                          activeColor: const Color(0xFF0284C7),
-                          onChanged: (isArabic) {
-                            final newLang = isArabic ? 'ar' : 'en';
-                            ref.read(appLocaleProvider.notifier).setLocale(newLang);
-                            _showLanguageChangedSnackbar(isArabic ? 'العربية' : 'English');
-                          },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              currentLocale.languageCode == 'ar' ? 'العربية' : 'English',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF10B981),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.swap_horiz_rounded,
+                              size: 15,
+                              color: Color(0xFF10B981),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                     onTap: () {
                       final newLang = currentLocale.languageCode == 'ar' ? 'en' : 'ar';
@@ -290,17 +463,17 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                   ),
 
-                  // 3. Theme
+                  // 4. Theme
                   _buildSettingItem(
-                    icon: Icons.dark_mode_outlined,
+                    icon: Icons.dark_mode_rounded,
                     iconBg: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                    iconColor: isDark ? const Color(0xFF94A3B8) : const Color(0xFF334155),
+                    iconColor: const Color(0xFFF59E0B),
                     title: l10n.tr('theme'),
                     subtitle: isDark ? l10n.tr('dark_mode') : l10n.tr('light_mode'),
                     titleColor: isDark ? const Color(0xFFF8FAFC) : null,
                     trailing: Switch.adaptive(
                       value: isDark,
-                      activeColor: const Color(0xFF0284C7),
+                      activeColor: const Color(0xFF10B981),
                       onChanged: (val) {
                         ref.read(appThemeModeProvider.notifier).toggleTheme(val);
                       },
@@ -317,9 +490,9 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                   ),
 
-                  // 4. Delete Account
+                  // 5. Delete Account
                   _buildSettingItem(
-                    icon: Icons.delete_outline_rounded,
+                    icon: Icons.no_accounts_rounded,
                     iconBg: const Color(0xFFFEE2E2),
                     iconColor: const Color(0xFFEF4444),
                     title: l10n.tr('delete_account'),
@@ -334,7 +507,7 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                   ),
 
-                  // 5. Logout
+                  // 6. Logout
                   _buildSettingItem(
                     icon: Icons.logout_rounded,
                     iconBg: const Color(0xFFFEF2F2),
@@ -358,7 +531,7 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
                   color: const Color(0xFF94A3B8),
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
