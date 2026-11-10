@@ -127,7 +127,18 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
     }
   }
 
+  bool get _isAlreadyPaid {
+    final payStatus = widget.order.paymentStatus.toUpperCase();
+    final payMethod = widget.order.paymentMethod.toUpperCase();
+    return payStatus == 'PAID' ||
+        payMethod == 'PREPAID' ||
+        payMethod == 'ONLINE' ||
+        payMethod == 'CARD_ONLINE' ||
+        payMethod == 'APPLE_PAY';
+  }
+
   double get _allocatedTotal {
+    if (_isAlreadyPaid) return widget.order.totalAmount;
     double sum = 0.0;
     if (_cashEnabled) sum += double.tryParse(_cashController.text) ?? 0.0;
     if (_cardEnabled) sum += double.tryParse(_cardController.text) ?? 0.0;
@@ -136,12 +147,13 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
   }
 
   bool get _isPaymentAllocated {
+    if (_isAlreadyPaid) return true;
     final total = double.parse(widget.order.totalAmount.toStringAsFixed(2));
     return (_allocatedTotal - total).abs() < 0.05;
   }
 
   bool get _canConfirmDelivery {
-    return _isOtpVerified && _isPaymentAllocated;
+    return _isOtpVerified && (_isAlreadyPaid || _isPaymentAllocated);
   }
 
   Future<void> _handleConfirmDelivery(AppLocalizations l10n) async {
@@ -151,13 +163,21 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
 
     // Build payment breakdown map
     final breakdown = <String, double>{};
-    if (_cashEnabled) breakdown['Cash'] = double.tryParse(_cashController.text) ?? 0.0;
-    if (_cardEnabled) breakdown['Card/Bank'] = double.tryParse(_cardController.text) ?? 0.0;
-    if (_upiEnabled) breakdown['UPI/QR'] = double.tryParse(_upiController.text) ?? 0.0;
+    String primaryMethod = widget.order.paymentMethod.isNotEmpty
+        ? widget.order.paymentMethod
+        : 'PREPAID';
 
-    String primaryMethod = 'CASH';
-    if (_cardEnabled && !_cashEnabled) primaryMethod = 'CARD';
-    if (_upiEnabled && !_cashEnabled && !_cardEnabled) primaryMethod = 'UPI';
+    if (!_isAlreadyPaid) {
+      if (_cashEnabled) breakdown['Cash'] = double.tryParse(_cashController.text) ?? 0.0;
+      if (_cardEnabled) breakdown['Card/Bank'] = double.tryParse(_cardController.text) ?? 0.0;
+      if (_upiEnabled) breakdown['UPI/QR'] = double.tryParse(_upiController.text) ?? 0.0;
+
+      primaryMethod = 'CASH';
+      if (_cardEnabled && !_cashEnabled) primaryMethod = 'CARD';
+      if (_upiEnabled && !_cashEnabled && !_cardEnabled) primaryMethod = 'UPI';
+    } else {
+      breakdown[primaryMethod] = widget.order.totalAmount;
+    }
 
     final success = await controller.completeDeliveryAndCollectPayment(
       outletId: widget.driver.outletId,
@@ -249,8 +269,11 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
                     _buildItemsOrderedCard(cardBg, borderColor, primaryText, isDark, l10n),
                     const SizedBox(height: 16),
 
-                    // 4. Split Payment Card (FX Theme)
-                    _buildSplitPaymentCard(cardBg, borderColor, primaryText, isDark, l10n),
+                    // 4. Payment Section (Already Paid Banner vs Split Payment Card)
+                    if (_isAlreadyPaid)
+                      _buildAlreadyPaidCard(cardBg, borderColor, primaryText, isDark, l10n)
+                    else
+                      _buildSplitPaymentCard(cardBg, borderColor, primaryText, isDark, l10n),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -809,6 +832,143 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
   }
 
   // ---------------------------------------------------------------------------
+  // 4a. Already Paid Status Card
+  // ---------------------------------------------------------------------------
+  Widget _buildAlreadyPaidCard(
+    Color cardBg,
+    Color borderColor,
+    Color primaryText,
+    bool isDark,
+    AppLocalizations l10n,
+  ) {
+    final methodLabel = widget.order.paymentMethodLabel.isNotEmpty
+        ? widget.order.paymentMethodLabel
+        : (widget.order.paymentMethod.isNotEmpty ? widget.order.paymentMethod : 'Online Payment');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF065F46) : const Color(0xFFA7F3D0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF10B981).withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_rounded,
+                  color: Color(0xFF10B981),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Payment Already Completed',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF065F46),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Customer paid online when placing this order.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF047857),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Divider(
+            height: 1,
+            color: isDark ? const Color(0xFF065F46) : const Color(0xFFA7F3D0),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Paid via:',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  methodLabel,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF10B981),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Amount Collected from Customer:',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+              ),
+              Text(
+                'SAR 0.00 (No cash to collect)',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // 4. Split Payment Card (FX Theme)
   // ---------------------------------------------------------------------------
   Widget _buildSplitPaymentCard(
@@ -1082,7 +1242,7 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                l10n.tr('amount_to_collect'),
+                _isAlreadyPaid ? 'Total Order Amount (Prepaid)' : l10n.tr('amount_to_collect'),
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -1090,11 +1250,11 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
                 ),
               ),
               Text(
-                'SAR ${totalDue.toStringAsFixed(2)}',
+                _isAlreadyPaid ? 'PAID (SAR 0.00)' : 'SAR ${totalDue.toStringAsFixed(2)}',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFF0284C7), // FX Electric Blue
+                  color: _isAlreadyPaid ? const Color(0xFF10B981) : const Color(0xFF0284C7),
                 ),
               ),
             ],
@@ -1141,15 +1301,15 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
               ),
             ),
 
-          // Confirm Delivery & Collect Button (FX Electric Blue)
+          // Confirm Delivery Button
           SizedBox(
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
               onPressed: _canConfirmDelivery ? () => _handleConfirmDelivery(l10n) : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0284C7),
-                disabledBackgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.3),
+                backgroundColor: _isAlreadyPaid ? const Color(0xFF10B981) : const Color(0xFF0284C7),
+                disabledBackgroundColor: (_isAlreadyPaid ? const Color(0xFF10B981) : const Color(0xFF0284C7)).withValues(alpha: 0.3),
                 foregroundColor: Colors.white,
                 disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
                 elevation: 0,
@@ -1163,7 +1323,7 @@ class _CollectPaymentPageState extends ConsumerState<CollectPaymentPage> {
                   const Icon(Icons.check_circle_rounded, size: 18),
                   const SizedBox(width: 8),
                   Text(
-                    l10n.tr('confirm_delivery_collect'),
+                    _isAlreadyPaid ? 'Confirm Handover & Complete' : l10n.tr('confirm_delivery_collect'),
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,

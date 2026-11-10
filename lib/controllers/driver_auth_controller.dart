@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/driver_profile_model.dart';
 import '../repositories/driver_auth_repository.dart';
+import '../repositories/rider_orders_repository.dart';
 
 /// Holds the currently logged-in driver's profile
 final currentDriverProfileProvider =
@@ -63,6 +64,22 @@ class CurrentDriverNotifier extends StateNotifier<AsyncValue<DriverProfileModel?
   }
 
   Future<void> logout() async {
+    // 1. Mark driver as offline in Firestore BEFORE signing out
+    final currentDriver = state.value;
+    if (currentDriver != null && currentDriver.outletId.isNotEmpty) {
+      try {
+        await _ref.read(riderOrdersRepositoryProvider).updateDriverDutyStatus(
+              outletId: currentDriver.outletId,
+              driverId: currentDriver.id ?? currentDriver.email,
+              isOnline: false,
+              email: currentDriver.email,
+            );
+      } catch (e) {
+        // Continue logout even if status update fails
+      }
+    }
+
+    // 2. Sign out of Firebase Auth
     await _ref.read(driverAuthRepositoryProvider).signOut();
     state = const AsyncValue.data(null);
   }

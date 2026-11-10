@@ -85,31 +85,32 @@ class RiderOrdersRepository {
       'lastDutyChangedAt': FieldValue.serverTimestamp(),
     };
 
-    // 1. Only update if the document already exists in /inventory/{outletId}/drivers/{driverId}
+    // 1. Update in /riderUsers/{outletId}/riderUsers/{driverId}
     if (outletId.isNotEmpty && driverId.isNotEmpty) {
       try {
         final docRef = _firestore
-            .collection('inventory')
+            .collection('riderUsers')
             .doc(outletId)
-            .collection('drivers')
+            .collection('riderUsers')
             .doc(driverId);
         
         final docSnap = await docRef.get();
         if (docSnap.exists) {
           await docRef.update(statusMap);
+          return;
         }
       } catch (e) {
-        debugPrint('[RiderOrdersRepository] Error updating /inventory/$outletId/drivers/$driverId: $e');
+        debugPrint('[RiderOrdersRepository] Error updating /riderUsers/$outletId/riderUsers/$driverId: $e');
       }
     }
 
-    // 2. Also search by email in /inventory/{outletId}/drivers to update existing doc without creating a new one
+    // 2. Fallback search by email if driverId was not matched directly
     if (outletId.isNotEmpty && email != null && email.isNotEmpty) {
       try {
         final querySnap = await _firestore
-            .collection('inventory')
+            .collection('riderUsers')
             .doc(outletId)
-            .collection('drivers')
+            .collection('riderUsers')
             .where('email', isEqualTo: email.trim().toLowerCase())
             .get();
 
@@ -118,19 +119,6 @@ class RiderOrdersRepository {
         }
       } catch (e) {
         debugPrint('[RiderOrdersRepository] Error updating by email query: $e');
-      }
-    }
-
-    // 3. Update top-level drivers registry: /drivers/{email} (only if it exists)
-    if (email != null && email.isNotEmpty) {
-      try {
-        final regRef = _firestore.collection('drivers').doc(email.trim().toLowerCase());
-        final regSnap = await regRef.get();
-        if (regSnap.exists) {
-          await regRef.update(statusMap);
-        }
-      } catch (e) {
-        debugPrint('[RiderOrdersRepository] Error updating /drivers/$email: $e');
       }
     }
   }

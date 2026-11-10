@@ -43,38 +43,10 @@ class BranchDetailsPage extends StatelessWidget {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Storefront Icon & Title
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0C4A6E).withValues(alpha: 0.4) : const Color(0xFFE0F2FE),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.storefront_rounded,
-                    color: Color(0xFF0284C7),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  l10n.tr('branch_details'),
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 19,
-                    color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
             // Card Container matching app theme
             Container(
               decoration: BoxDecoration(

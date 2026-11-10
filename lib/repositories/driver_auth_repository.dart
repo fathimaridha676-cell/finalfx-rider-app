@@ -120,37 +120,26 @@ class DriverAuthRepository {
     return profile;
   }
 
-  /// Locates driver profile by email:
-  /// First checks the top-level `/drivers/{email}` registry,
-  /// then falls back to `collectionGroup('drivers')`.
+  /// Locates driver profile by email using Firestore collectionGroup('riderUsers').
   /// Afterwards, it enriches the profile with the full OutletModel data
   /// (`nameAr`, `addressEn`/`addressAr`, `mobileNumber`) from Firestore.
   Future<DriverProfileModel?> fetchDriverProfileByEmail(String email) async {
     final cleanEmail = email.trim().toLowerCase();
     DriverProfileModel? profile;
 
-    // Check 1: Top-level registry
     try {
-      final doc = await _firestore.collection('drivers').doc(cleanEmail).get();
-      if (doc.exists && doc.data() != null) {
-        profile = DriverProfileModel.fromMap(doc.data()!, id: doc.id);
+      final snapshot = await _firestore
+          .collectionGroup('riderUsers')
+          .where('email', isEqualTo: cleanEmail)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final doc = snapshot.docs.first;
+        profile = DriverProfileModel.fromMap(doc.data(), id: doc.id);
       }
-    } catch (_) {}
-
-    // Check 2: Subcollection query across all outlets
-    if (profile == null) {
-      try {
-        final snapshot = await _firestore
-            .collectionGroup('drivers')
-            .where('email', isEqualTo: cleanEmail)
-            .limit(1)
-            .get();
-
-        if (snapshot.docs.isNotEmpty) {
-          final doc = snapshot.docs.first;
-          profile = DriverProfileModel.fromMap(doc.data(), id: doc.id);
-        }
-      } catch (_) {}
+    } catch (e) {
+      debugPrint('[DriverAuthRepository] Error querying collectionGroup riderUsers: $e');
     }
 
     if (profile == null) return null;

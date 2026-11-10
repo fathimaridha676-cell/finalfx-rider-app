@@ -13,16 +13,52 @@ import 'collect_payment_page.dart';
 
 class DriverOrdersPage extends ConsumerStatefulWidget {
   final DriverProfileModel driver;
+  final String? initialTargetOrderId;
 
-  const DriverOrdersPage({super.key, required this.driver});
+  const DriverOrdersPage({
+    super.key,
+    required this.driver,
+    this.initialTargetOrderId,
+  });
 
   @override
-  ConsumerState<DriverOrdersPage> createState() => _DriverOrdersPageState();
+  ConsumerState<DriverOrdersPage> createState() => DriverOrdersPageState();
 }
 
-class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
-  // Stage Filter: 0 = All, 1 = Assigned, 2 = Shop Picked, 3 = On the Way
+class DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
+  // Stage Filter: 0 = All, 1 = Assigned, 2 = Shop Picked, 3 = On the Way, 4 = Delivered, 5 = Cancelled
   int _selectedStageIndex = 0;
+  String? _highlightedOrderId;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _highlightedOrderId = widget.initialTargetOrderId;
+  }
+
+  void focusOrder(String orderId) {
+    setState(() {
+      _selectedStageIndex = 0; // Switch to "All" so the order is guaranteed to be in the list
+      _highlightedOrderId = orderId;
+    });
+    // Scroll to top or give smooth scroll feedback
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +106,10 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
                   _buildStageChip(2, l10n.tr('stage_shop_picked'), isDark),
                   const SizedBox(width: 8),
                   _buildStageChip(3, l10n.tr('stage_on_the_way'), isDark),
+                  const SizedBox(width: 8),
+                  _buildStageChip(4, l10n.tr('tab_delivered'), isDark),
+                  const SizedBox(width: 8),
+                  _buildStageChip(5, l10n.tr('tab_cancelled'), isDark),
                 ],
               ),
             ),
@@ -93,13 +133,14 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
                 ),
               ),
               data: (orders) {
-                // Filter out already delivered or cancelled from active view
-                final activeOrders = orders.where((o) {
+                final displayOrders = orders.where((o) {
                   final status = o.orderStatus.toUpperCase();
-                  if (status == 'DELIVERED' || status == 'CANCELLED') return false;
 
-                  if (_selectedStageIndex == 1) {
-                    // Assigned: pending or processing or assigned
+                  if (_selectedStageIndex == 0) {
+                    // All: show everything (active, delivered, and cancelled)
+                    return true;
+                  } else if (_selectedStageIndex == 1) {
+                    // Assigned: pending or processing or assigned (active only)
                     return status == 'PENDING' || status == 'PROCESSING' || status == 'CONFIRMED' || status == 'ASSIGNED';
                   } else if (_selectedStageIndex == 2) {
                     // Shop Picked
@@ -107,11 +148,20 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
                   } else if (_selectedStageIndex == 3) {
                     // On the Way
                     return status == 'OUT_FOR_DELIVERY' || status == 'DISPATCHED' || status == 'ARRIVED';
+                  } else if (_selectedStageIndex == 4) {
+                    // Delivered only
+                    return status == 'DELIVERED';
+                  } else if (_selectedStageIndex == 5) {
+                    // Cancelled only
+                    return status == 'CANCELLED';
                   }
-                  return true; // All active
+                  return true;
                 }).toList();
 
-                if (activeOrders.isEmpty) {
+                if (displayOrders.isEmpty) {
+                  final isCancelledTab = _selectedStageIndex == 5;
+                  final isDeliveredTab = _selectedStageIndex == 4;
+
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32),
@@ -121,18 +171,36 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFFFF7ED),
+                              color: isDark
+                                  ? const Color(0xFF1E293B)
+                                  : (isCancelledTab
+                                      ? const Color(0xFFFEE2E2)
+                                      : (isDeliveredTab
+                                          ? const Color(0xFFD1FAE5)
+                                          : const Color(0xFFFFF7ED))),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
-                              Icons.delivery_dining_outlined,
+                            child: Icon(
+                              isCancelledTab
+                                  ? Icons.cancel_outlined
+                                  : (isDeliveredTab
+                                      ? Icons.check_circle_outline_rounded
+                                      : Icons.delivery_dining_outlined),
                               size: 40,
-                              color: Color(0xFFF59E0B),
+                              color: isCancelledTab
+                                  ? const Color(0xFFEF4444)
+                                  : (isDeliveredTab
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFF59E0B)),
                             ),
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            l10n.tr('no_active_orders'),
+                            isCancelledTab
+                                ? l10n.tr('no_cancelled_orders')
+                                : (isDeliveredTab
+                                    ? l10n.tr('no_delivered_orders')
+                                    : l10n.tr('no_active_orders')),
                             style: GoogleFonts.plusJakartaSans(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
@@ -141,7 +209,12 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            l10n.tr('empty_active_desc'),
+                            isCancelledTab
+                                ? l10n.tr('empty_cancelled_desc')
+                                : (isDeliveredTab
+                                    ? 'Completed deliveries will appear here.'
+                                    : l10n.tr('empty_active_desc')),
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12.5,
                               color: const Color(0xFF64748B),
@@ -153,13 +226,35 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
                   );
                 }
 
+                // If target order was requested, reorder to place it first
+                final sortedOrders = List<RiderOrderModel>.from(displayOrders);
+                if (_highlightedOrderId != null) {
+                  final targetIndex = sortedOrders.indexWhere(
+                    (o) => o.id == _highlightedOrderId || o.orderNumber == _highlightedOrderId,
+                  );
+                  if (targetIndex > 0) {
+                    final target = sortedOrders.removeAt(targetIndex);
+                    sortedOrders.insert(0, target);
+                  }
+                }
+
                 return ListView.separated(
+                  controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: activeOrders.length,
+                  itemCount: sortedOrders.length,
                   separatorBuilder: (context, index) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
-                    final order = activeOrders[index];
-                    return _buildReferenceOrderCard(context, order, l10n, isDark);
+                    final order = sortedOrders[index];
+                    final isHighlighted = _highlightedOrderId != null &&
+                        (order.id == _highlightedOrderId || order.orderNumber == _highlightedOrderId);
+
+                    return _buildReferenceOrderCard(
+                      context,
+                      order,
+                      l10n,
+                      isDark,
+                      isHighlighted: isHighlighted,
+                    );
                   },
                 );
               },
@@ -217,8 +312,9 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
     BuildContext context,
     RiderOrderModel order,
     AppLocalizations l10n,
-    bool isDark,
-  ) {
+    bool isDark, {
+    bool isHighlighted = false,
+  }) {
     final timeFormat = DateFormat('hh:mm a');
     final formattedTime = timeFormat.format(order.createdDate);
     final status = order.orderStatus.toUpperCase();
@@ -232,27 +328,39 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
     final bool isShopPicked = (status == 'SHOP_PICKED' || status == 'PICKED_FROM_SHOP');
     final bool isOnTheWay = (status == 'OUT_FOR_DELIVERY' || status == 'DISPATCHED');
     final bool isArrived = (status == 'ARRIVED');
+    final bool isDelivered = (status == 'DELIVERED');
+    final bool isCancelled = (status == 'CANCELLED');
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showOrderDetailsBottomSheet(context, order, l10n, isDark),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isHighlighted
+                  ? const Color(0xFF0284C7)
+                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              width: isHighlighted ? 2.0 : 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isHighlighted
+                    ? const Color(0xFF0284C7).withValues(alpha: isDark ? 0.4 : 0.2)
+                    : Colors.black.withValues(alpha: isDark ? 0.25 : 0.04),
+                blurRadius: isHighlighted ? 18 : 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Order ID & Source Badge
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Order ID & Source Badge
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,64 +532,125 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
           const SizedBox(height: 18),
 
           // Bottom Action Buttons matching app theme
-          Row(
-            children: [
-              // Track Map Button (Directly launches Google Maps navigation)
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _openGoogleMapsForOrder(context, order),
-                  icon: const Icon(Icons.navigation_rounded, size: 17),
-                  label: Text(
-                    l10n.tr('track_map'),
+          if (isDelivered)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF064E3B) : const Color(0xFFD1FAE5),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF065F46) : const Color(0xFFA7F3D0),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.check_circle_rounded, size: 18, color: Color(0xFF10B981)),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.tr('delivered'),
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12.5,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3,
+                      color: const Color(0xFF10B981),
+                      letterSpacing: 0.2,
                     ),
                   ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF0284C7),
-                    side: const BorderSide(color: Color(0xFFBAE6FD), width: 1.5),
-                    backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F9FF),
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                ],
+              ),
+            )
+          else if (isCancelled)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF450A0A) : const Color(0xFFFEE2E2),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFECACA),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.cancel_rounded, size: 18, color: Color(0xFFEF4444)),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.tr('cancelled'),
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFFEF4444),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Row(
+              children: [
+                // Track Map Button (Directly launches Google Maps navigation)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openGoogleMapsForOrder(context, order),
+                    icon: const Icon(Icons.navigation_rounded, size: 17),
+                    label: Text(
+                      l10n.tr('track_map'),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF0284C7),
+                      side: const BorderSide(color: Color(0xFFBAE6FD), width: 1.5),
+                      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF0F9FF),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(width: 10),
+                const SizedBox(width: 10),
 
-              // Dynamic Lifecycle Status Button (Electric Blue Gradient / Emerald on Arrival)
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _handleLifecycleAction(context, order, status, l10n),
-                  icon: Icon(_getActionIcon(isAssigned, isShopPicked, isOnTheWay, isArrived), size: 17),
-                  label: Text(
-                    _getActionTitle(isAssigned, isShopPicked, isOnTheWay, isArrived, l10n),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.3,
+                // Dynamic Lifecycle Status Button (Electric Blue Gradient / Emerald on Arrival)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _handleLifecycleAction(context, order, status, l10n),
+                    icon: Icon(_getActionIcon(isAssigned, isShopPicked, isOnTheWay, isArrived), size: 17),
+                    label: Text(
+                      _getActionTitle(isAssigned, isShopPicked, isOnTheWay, isArrived, l10n),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isArrived ? const Color(0xFF10B981) : const Color(0xFF0284C7),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isArrived ? const Color(0xFF10B981) : const Color(0xFF0284C7),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      shadowColor: const Color(0xFF0284C7).withValues(alpha: 0.4),
                     ),
-                    shadowColor: const Color(0xFF0284C7).withValues(alpha: 0.4),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
+    ),
+    ),
     );
   }
 
@@ -796,5 +965,442 @@ class _DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
         );
       }
     }
+  }
+
+  void _showOrderDetailsBottomSheet(
+    BuildContext context,
+    RiderOrderModel order,
+    AppLocalizations l10n,
+    bool isDark,
+  ) {
+    final timeFormat = DateFormat('dd MMM yyyy, hh:mm a');
+    final formattedTime = timeFormat.format(order.createdDate);
+    final status = order.orderStatus.toUpperCase();
+
+    Color statusBgColor;
+    Color statusTextColor;
+    if (status == 'DELIVERED') {
+      statusBgColor = const Color(0xFFD1FAE5);
+      statusTextColor = const Color(0xFF059669);
+    } else if (status == 'CANCELLED') {
+      statusBgColor = const Color(0xFFFEE2E2);
+      statusTextColor = const Color(0xFFDC2626);
+    } else {
+      statusBgColor = const Color(0xFFE0F2FE);
+      statusTextColor = const Color(0xFF0284C7);
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Top drag handle
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          order.orderNumber.startsWith('#') ? order.orderNumber : '#${order.orderNumber}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          formattedTime,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: statusBgColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        status,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: statusTextColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // Scrollable Details Body
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Customer Section
+                      Text(
+                        l10n.tr('customer_name'),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.person_rounded, size: 16, color: Color(0xFF0284C7)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    order.customerName.isNotEmpty ? order.customerName : 'Walk-in Customer',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (order.customerPhone.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Row(
+                                children: [
+                                  const Icon(Icons.phone_rounded, size: 16, color: Color(0xFF0284C7)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      order.customerPhone,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () => _launchCaller(order.customerPhone),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE6F4EA),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.phone, size: 12, color: Color(0xFF059669)),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            l10n.tr('call'),
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w800,
+                                              color: const Color(0xFF059669),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            if (order.customerAddress.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.location_on_rounded, size: 16, color: Color(0xFF0284C7)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      order.customerAddress,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // Items Section
+                      Text(
+                        l10n.tr('items_ordered'),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
+                          color: const Color(0xFF94A3B8),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: order.items.isEmpty
+                            ? Text(
+                                '1x General Order Package',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                ),
+                              )
+                            : ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: order.items.length,
+                                separatorBuilder: (_, __) => const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 8),
+                                  child: Divider(height: 1),
+                                ),
+                                itemBuilder: (context, index) {
+                                  final item = order.items[index];
+                                  return Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0F2FE),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(
+                                          '${item.qty}x',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: const Color(0xFF0284C7),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.name,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                                color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                              ),
+                                            ),
+                                            if (item.variant != null && item.variant!.isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                item.variant!,
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  fontSize: 11.5,
+                                                  color: const Color(0xFF94A3B8),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      Text(
+                                        'SAR ${(item.price * item.qty).toStringAsFixed(2)}',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // Financial Summary
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Subtotal',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12.5,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                                Text(
+                                  'SAR ${order.subtotal.toStringAsFixed(2)}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Estimated VAT',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12.5,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                                Text(
+                                  'SAR ${order.estimatedVat.toStringAsFixed(2)}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Delivery Fee',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12.5,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                                Text(
+                                  'SAR ${order.deliveryFee.toStringAsFixed(2)}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Divider(height: 1),
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Total Amount',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                Text(
+                                  'SAR ${order.totalAmount.toStringAsFixed(2)}',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    color: const Color(0xFF0284C7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

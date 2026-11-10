@@ -6,6 +6,7 @@ import '../controllers/driver_auth_controller.dart';
 import '../controllers/app_settings_controller.dart';
 import '../l10n/app_localizations.dart';
 import 'branch_details_page.dart';
+import 'order_history_page.dart';
 import 'driver_login_page.dart';
 
 class DriverProfilePage extends ConsumerStatefulWidget {
@@ -196,7 +197,31 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                   ),
 
-                  // 1. Branch Details
+                  // 1. Order History
+                  _buildSettingItem(
+                    icon: Icons.history_rounded,
+                    iconBg: isDark ? const Color(0xFF0F172A) : const Color(0xFFE0F2FE),
+                    iconColor: const Color(0xFF0284C7),
+                    title: l10n.tr('order_history'),
+                    subtitle: l10n.tr('order_history_desc'),
+                    titleColor: isDark ? const Color(0xFFF8FAFC) : null,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrderHistoryPage(driver: driver),
+                        ),
+                      );
+                    },
+                  ),
+
+                  Divider(
+                    height: 1,
+                    indent: 64,
+                    endIndent: 20,
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                  ),
+
+                  // 2. Branch Details
                   _buildSettingItem(
                     icon: Icons.storefront_outlined,
                     iconBg: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
@@ -220,7 +245,7 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                     color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
                   ),
 
-                  // 2. Language (اللغة)
+                  // 2. Language (اللغة) with switch toggle
                   _buildSettingItem(
                     icon: Icons.language_rounded,
                     iconBg: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
@@ -228,7 +253,34 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
                     title: l10n.tr('language'),
                     subtitle: selectedLanguageLabel,
                     titleColor: isDark ? const Color(0xFFF8FAFC) : null,
-                    onTap: () => _showLanguageSelector(context, l10n),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          currentLocale.languageCode == 'ar' ? 'العربية' : 'EN',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0284C7),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Switch.adaptive(
+                          value: currentLocale.languageCode == 'ar',
+                          activeColor: const Color(0xFF0284C7),
+                          onChanged: (isArabic) {
+                            final newLang = isArabic ? 'ar' : 'en';
+                            ref.read(appLocaleProvider.notifier).setLocale(newLang);
+                            _showLanguageChangedSnackbar(isArabic ? 'العربية' : 'English');
+                          },
+                        ),
+                      ],
+                    ),
+                    onTap: () {
+                      final newLang = currentLocale.languageCode == 'ar' ? 'en' : 'ar';
+                      ref.read(appLocaleProvider.notifier).setLocale(newLang);
+                      _showLanguageChangedSnackbar(newLang == 'ar' ? 'العربية' : 'English');
+                    },
                   ),
 
                   Divider(
@@ -324,7 +376,7 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
     String? subtitle,
     Color? titleColor,
     Widget? trailing,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
   }) {
     return InkWell(
       onTap: onTap,
@@ -744,11 +796,12 @@ class _DriverProfilePageState extends ConsumerState<DriverProfilePage> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await ref.read(currentDriverProfileProvider.notifier).logout();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const DriverLoginPage()),
-                  (route) => false,
+              final messenger = ScaffoldMessenger.of(context);
+              try {
+                await ref.read(currentDriverProfileProvider.notifier).logout();
+              } catch (e) {
+                messenger.showSnackBar(
+                  SnackBar(content: Text('Logout failed: $e')),
                 );
               }
             },

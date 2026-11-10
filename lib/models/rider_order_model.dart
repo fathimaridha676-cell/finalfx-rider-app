@@ -142,6 +142,17 @@ class RiderOrderModel {
       parsedDate = DateTime.now();
     }
 
+    // Parse assignedDriverAt date
+    DateTime? parsedAssignedDate;
+    final rawAssignedDate = map['assignedDriverAt'] ?? map['assignedAt'];
+    if (rawAssignedDate is Timestamp) {
+      parsedAssignedDate = rawAssignedDate.toDate();
+    } else if (rawAssignedDate is String) {
+      parsedAssignedDate = DateTime.tryParse(rawAssignedDate);
+    } else if (rawAssignedDate is int) {
+      parsedAssignedDate = DateTime.fromMillisecondsSinceEpoch(rawAssignedDate);
+    }
+
     return RiderOrderModel(
       id: effectiveId,
       orderNumber: map['orderNumber']?.toString() ?? effectiveId,
@@ -173,6 +184,7 @@ class RiderOrderModel {
       createdDate: parsedDate,
       assignedDriverId: map['assignedDriverId']?.toString() ?? map['driverId']?.toString(),
       assignedDriverName: map['assignedDriverName']?.toString() ?? map['driverName']?.toString(),
+      assignedDriverAt: parsedAssignedDate,
       cancellationReason: map['cancellationReason']?.toString(),
       cancelledBy: map['cancelledBy']?.toString(),
       // Secure 4-digit OTP stored in Firestore doc for customer delivery handover

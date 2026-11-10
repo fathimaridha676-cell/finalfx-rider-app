@@ -132,6 +132,10 @@ class AppLocalizations {
       // Profile & Settings
       'my_profile': 'My Profile',
       'settings': 'Settings',
+      'order_history': 'Order History',
+      'order_history_desc': 'View list of all orders that came through',
+      'no_order_history': 'No Order History Found',
+      'empty_history_desc': 'Orders assigned to you will appear here.',
       'branch_details': 'Branch Details',
       'branch_name': 'Branch Name',
       'arabic_name': 'Arabic Name',
@@ -280,6 +284,10 @@ class AppLocalizations {
       // Profile & Settings
       'my_profile': 'الملف الشخصي',
       'settings': 'الإعدادات',
+      'order_history': 'سجل الطلبات',
+      'order_history_desc': 'عرض قائمة جميع الطلبات الواردة',
+      'no_order_history': 'لا يوجد سجل طلبات',
+      'empty_history_desc': 'الطلبات المسندة إليك ستظهر هنا.',
       'branch_details': 'تفاصيل الفرع',
       'branch_name': 'اسم الفرع',
       'arabic_name': 'الاسم بالعربية',

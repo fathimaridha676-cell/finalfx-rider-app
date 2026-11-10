@@ -20,6 +20,14 @@ class DriverHomePage extends ConsumerStatefulWidget {
 class _DriverHomePageState extends ConsumerState<DriverHomePage> with WidgetsBindingObserver {
   int _currentNavIndex = 0;
   DriverProfileModel? _lastDriver;
+  final GlobalKey<DriverOrdersPageState> _ordersPageKey = GlobalKey<DriverOrdersPageState>();
+
+  void _navigateToOrder(String orderId) {
+    setState(() => _currentNavIndex = 1);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ordersPageKey.currentState?.focusOrder(orderId);
+    });
+  }
 
   @override
   void initState() {
@@ -35,13 +43,14 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> with WidgetsBin
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // When disposed / closed, mark driver as OFFLINE
+    // Mark driver as OFFLINE when HomePage unmounts
     _setOnlineStatus(false);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
     if (state == AppLifecycleState.resumed) {
       // Driver brought app back to foreground -> set ONLINE
       _setOnlineStatus(true);
@@ -54,15 +63,19 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> with WidgetsBin
   }
 
   void _setOnlineStatus(bool isOnline) {
-    ref.read(driverDutyStatusProvider.notifier).state = isOnline;
-    final driver = _lastDriver ?? ref.read(currentDriverProfileProvider).value;
-    if (driver != null && (driver.id != null || driver.email.isNotEmpty)) {
-      ref.read(riderOrdersControllerProvider.notifier).toggleDutyStatus(
-            outletId: driver.outletId,
-            driverId: driver.id ?? driver.email,
-            isOnline: isOnline,
-            email: driver.email,
-          );
+    try {
+      ref.read(driverDutyStatusProvider.notifier).state = isOnline;
+      final driver = _lastDriver ?? ref.read(currentDriverProfileProvider).value;
+      if (driver != null && (driver.id != null || driver.email.isNotEmpty)) {
+        ref.read(riderOrdersControllerProvider.notifier).toggleDutyStatus(
+              outletId: driver.outletId,
+              driverId: driver.id ?? driver.email,
+              isOnline: isOnline,
+              email: driver.email,
+            );
+      }
+    } catch (e) {
+      debugPrint('Error updating duty status: $e');
     }
   }
 
@@ -95,8 +108,12 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> with WidgetsBin
           _DriverHomeDashboard(
             driver: driver,
             onGoToOrders: () => setState(() => _currentNavIndex = 1),
+            onSelectOrder: _navigateToOrder,
           ),
-          DriverOrdersPage(driver: driver),
+          DriverOrdersPage(
+            key: _ordersPageKey,
+            driver: driver,
+          ),
           DriverProfilePage(driver: driver),
         ];
 
@@ -153,10 +170,12 @@ class _DriverHomePageState extends ConsumerState<DriverHomePage> with WidgetsBin
 class _DriverHomeDashboard extends ConsumerWidget {
   final DriverProfileModel driver;
   final VoidCallback onGoToOrders;
+  final void Function(String orderId)? onSelectOrder;
 
   const _DriverHomeDashboard({
     required this.driver,
     required this.onGoToOrders,
+    this.onSelectOrder,
   });
 
   @override
@@ -499,7 +518,19 @@ class _DriverHomeDashboard extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        _buildActiveMissionCard(context, activeOrder, onGoToOrders, l10n, isDark),
+                        _buildActiveMissionCard(
+                          context,
+                          activeOrder,
+                          () {
+                            if (onSelectOrder != null && activeOrder != null) {
+                              onSelectOrder!(activeOrder.id);
+                            } else {
+                              onGoToOrders();
+                            }
+                          },
+                          l10n,
+                          isDark,
+                        ),
                         const SizedBox(height: 26),
                       ],
 
