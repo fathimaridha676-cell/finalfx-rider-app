@@ -360,7 +360,8 @@ class DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
     bool isHighlighted = false,
   }) {
     final timeFormat = DateFormat('hh:mm a');
-    final formattedTime = timeFormat.format(order.createdDate);
+    final displayDate = order.assignedDriverAt ?? order.createdDate;
+    final formattedTime = timeFormat.format(displayDate);
     final status = order.orderStatus.toUpperCase();
 
     // Determine current lifecycle stage
@@ -1004,7 +1005,8 @@ class DriverOrdersPageState extends ConsumerState<DriverOrdersPage> {
     bool isDark,
   ) {
     final timeFormat = DateFormat('dd MMM yyyy, hh:mm a');
-    final formattedTime = timeFormat.format(order.createdDate);
+    final displayDate = order.assignedDriverAt ?? order.createdDate;
+    final formattedTime = timeFormat.format(displayDate);
     final status = order.orderStatus.toUpperCase();
 
     Color statusBgColor;

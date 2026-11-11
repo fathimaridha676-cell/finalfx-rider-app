@@ -67,7 +67,11 @@ class RiderOrdersRepository {
             }
           }
 
-          list.sort((a, b) => b.createdDate.compareTo(a.createdDate));
+          list.sort((a, b) {
+            final dateA = a.assignedDriverAt ?? a.createdDate;
+            final dateB = b.assignedDriverAt ?? b.createdDate;
+            return dateB.compareTo(dateA);
+          });
           return list;
         });
   }
