@@ -30,7 +30,10 @@ class _TrackDeliveryMapPageState extends State<TrackDeliveryMapPage> {
     super.initState();
     _mapController = MapController();
 
-    if (widget.order.customerLat != null && widget.order.customerLng != null) {
+    if (widget.order.customerLat != null &&
+        widget.order.customerLng != null &&
+        widget.order.customerLat != 0.0 &&
+        widget.order.customerLng != 0.0) {
       _customerLocation = LatLng(widget.order.customerLat!, widget.order.customerLng!);
     }
 
@@ -144,7 +147,34 @@ class _TrackDeliveryMapPageState extends State<TrackDeliveryMapPage> {
   }
 
   Future<void> _openExternalMap() async {
-    if (_customerLocation == null) return;
+    if (_customerLocation == null) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFFEF4444),
+            content: Row(
+              children: [
+                const Icon(Icons.location_off_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.tr('coordinates_not_given'),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return;
+    }
     final lat = _customerLocation!.latitude;
     final lng = _customerLocation!.longitude;
 
@@ -173,7 +203,8 @@ class _TrackDeliveryMapPageState extends State<TrackDeliveryMapPage> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final initialCenter = _riderLocation ?? _customerLocation ?? const LatLng(24.7136, 46.6753);
+    final initialCenter = _customerLocation ?? _riderLocation ?? const LatLng(0, 0);
+    final hasCoordinates = _customerLocation != null;
     final distanceKm = _calculateDistanceKm();
     final etaMinutes = (distanceKm * 2.5).round().clamp(1, 180);
 
@@ -308,8 +339,47 @@ class _TrackDeliveryMapPageState extends State<TrackDeliveryMapPage> {
             ],
           ),
 
+          // Customer Coordinates Warning overlay
+          if (!hasCoordinates)
+            Positioned(
+              top: 16,
+              left: 20,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.location_off_rounded, color: Color(0xFFD97706), size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        l10n.tr('coordinates_not_given'),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           // Loading or Error overlay
-          if (_isLoadingLocation || _errorMessage != null)
+          else if (_isLoadingLocation || _errorMessage != null)
             Positioned(
               top: 16,
               left: 20,
@@ -378,88 +448,121 @@ class _TrackDeliveryMapPageState extends State<TrackDeliveryMapPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Distance & ETA header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF0284C7).withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.route_rounded, size: 14, color: Color(0xFF0284C7)),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '${distanceKm.toStringAsFixed(1)} km',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 13,
-                                    color: const Color(0xFF0284C7),
+                  if (hasCoordinates) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0284C7).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.route_rounded, size: 14, color: Color(0xFF0284C7)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '${distanceKm.toStringAsFixed(1)} km',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      color: const Color(0xFF0284C7),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.timer_outlined, size: 14, color: Color(0xFF059669)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    '~$etaMinutes mins',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                      color: const Color(0xFF059669),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (widget.order.customerPhone.isNotEmpty)
+                          InkWell(
+                            onTap: _callCustomer,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: const Color(0xFF10B981)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.phone, size: 13, color: Color(0xFF059669)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    l10n.tr('call'),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF059669),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.timer_outlined, size: 14, color: Color(0xFF059669)),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '~$etaMinutes mins',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 13,
-                                    color: const Color(0xFF059669),
-                                  ),
-                                ),
-                              ],
-                            ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                  ] else if (widget.order.customerPhone.isNotEmpty) ...[
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: _callCustomer,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFF10B981)),
                           ),
-                        ],
-                      ),
-                      if (widget.order.customerPhone.isNotEmpty)
-                        InkWell(
-                          onTap: _callCustomer,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: const Color(0xFF10B981)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.phone, size: 13, color: Color(0xFF059669)),
-                                const SizedBox(width: 5),
-                                Text(
-                                  l10n.tr('call'),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF059669),
-                                  ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.phone, size: 13, color: Color(0xFF059669)),
+                              const SizedBox(width: 5),
+                              Text(
+                                l10n.tr('call'),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF059669),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
 
                   // Customer name & address
                   Row(

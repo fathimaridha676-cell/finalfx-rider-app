@@ -1306,7 +1306,7 @@ class _DriverHomeDashboard extends ConsumerWidget {
                           const SizedBox(width: 8),
                         ],
                         IconButton(
-                          onPressed: () => _launchNavigation(order),
+                          onPressed: () => _launchNavigation(context, order),
                           icon: const Icon(Icons.directions_rounded),
                           color: Colors.white,
                           style: IconButton.styleFrom(
@@ -1381,32 +1381,54 @@ class _DriverHomeDashboard extends ConsumerWidget {
     );
   }
 
-  Future<void> _launchNavigation(RiderOrderModel order) async {
-    Uri? launchUri;
-    if (order.customerLat != null && order.customerLng != null && order.customerLat != 0.0 && order.customerLng != 0.0) {
-      final lat = order.customerLat!;
-      final lng = order.customerLng!;
-      final geoUri = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
-      final fallbackWebUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
-      if (await canLaunchUrl(geoUri)) {
-        launchUri = geoUri;
-      } else {
-        launchUri = fallbackWebUri;
+  Future<void> _launchNavigation(BuildContext context, RiderOrderModel order) async {
+    final hasCoords = order.customerLat != null &&
+        order.customerLng != null &&
+        order.customerLat != 0.0 &&
+        order.customerLng != 0.0;
+
+    if (!hasCoords) {
+      if (context.mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFFEF4444),
+            content: Row(
+              children: [
+                const Icon(Icons.location_off_rounded, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.tr('coordinates_not_given'),
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
       }
-    } else if (order.customerAddress.isNotEmpty) {
-      final encodedAddress = Uri.encodeComponent(order.customerAddress);
-      final geoUri = Uri.parse('google.navigation:q=$encodedAddress&mode=d');
-      final fallbackWebUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$encodedAddress&travelmode=driving');
-      if (await canLaunchUrl(geoUri)) {
-        launchUri = geoUri;
-      } else {
-        launchUri = fallbackWebUri;
-      }
+      return;
     }
 
-    if (launchUri != null) {
-      await launchUrl(launchUri, mode: LaunchMode.externalApplication);
+    final lat = order.customerLat!;
+    final lng = order.customerLng!;
+    final geoUri = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
+    final fallbackWebUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+
+    Uri launchUri;
+    if (await canLaunchUrl(geoUri)) {
+      launchUri = geoUri;
+    } else {
+      launchUri = fallbackWebUri;
     }
+
+    await launchUrl(launchUri, mode: LaunchMode.externalApplication);
   }
 
   /// Interactive Active Order Card with gradient edge and quick-call/deliver info

@@ -65,6 +65,7 @@ class AppLocalizations {
       'mark_delivered': 'MARK AS DELIVERED',
       'call': 'Call',
       'open_google_maps': 'Open in Google Maps',
+      'coordinates_not_given': 'Coordinates not given for this order',
       'destination': 'Destination',
       'rider_location': 'Your Location',
 
@@ -235,6 +236,7 @@ class AppLocalizations {
       'mark_delivered': 'تأكيد التسليم',
       'call': 'اتصال',
       'open_google_maps': 'فتح في خرائط جوجل',
+      'coordinates_not_given': 'الإحداثيات غير متوفرة لهذا الطلب',
       'destination': 'وجهة التوصيل',
       'rider_location': 'موقعك الحالي',
 
